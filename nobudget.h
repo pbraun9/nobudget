@@ -3,14 +3,10 @@
 #include <string.h> //strlen()
 #include <stdlib.h> //system()
 
-
 void print_menu(int highlight);
 
-
-
 void menu_handler(int selected_item);
-void display_support(char* support_file_path);
-void syscall_output_example(char* command, char* temp_log_storage);
+void display_text(char* support_file_path);
 
 struct menu_ui {
     char *choices;

@@ -3,15 +3,16 @@
 int lenght = 0;
 int longest = 0;
 
-char title[] = "SNE Cloud - Innopolis University";
+char title[] = "Definitely Not a Cloud";
+char domain[] = "angrycow.ru";
 char footer[] = "powered by XEN ";
 int left_column_length = 28;
 struct menu_ui start_menu;
 char *choices[] = {
-	"NEW GUEST",
-	"OPERATE GUESTS",
-	"SUPPORT",
-	"QUIT"};
+	"N E W   G U E S T",
+        "M A N A G E   G U E S T S",
+        "S U P P O R T",
+	"Q U I T"};
 
 int n_choices = sizeof(choices) / sizeof(char *);
 
@@ -24,8 +25,11 @@ int main()
 	int c;
 
 	initscr();
+
+	// debug mode allows ^C ^Z
 	cbreak();
 	//raw();
+
 	keypad(stdscr, TRUE);
 	noecho();
 	curs_set(0);
@@ -52,15 +56,15 @@ int main()
 			if (highlight < n_choices)
 				++highlight;
 			break;
+		// ascii code for ENTER
 		case 10:
 		{
-			// 10 is ENTER key ascii code
 			choice = highlight;
 			break;
 		}
+		// ascii code for ESC
 		case 27:
 		{
-			// 27 is ESC key ascii code
 			menu_is_active = 0;
 			break;
 		}
@@ -71,6 +75,7 @@ int main()
 		// if(choice != 0)	/* User did a choice come out of the infinite loop */
 		// 	break;
 	}
+	// restore initial terminal settings
 	endwin();
 	return 0;
 }
@@ -82,11 +87,11 @@ void print_menu(int highlight)
 	erase();
 
 	attron(A_BOLD);
-	mvprintw(0, (COLS - strlen(title)) / 2, "%s", title);
+	mvprintw(0, (COLS - strlen(title)) / 2 - 2, "%s", title);
 	attroff(A_BOLD);
 
-	x = (COLS - longest) / 2;
-	y = (LINES - n_choices) / 2;
+	x = (COLS - longest) / 2 - 2;
+	y = (LINES - n_choices) / 2 - 1 ;
 	for (i = 0; i < n_choices; ++i)
 	{
 		if (highlight == i + 1) /* High light the present choice */
@@ -96,10 +101,15 @@ void print_menu(int highlight)
 			attroff(A_REVERSE);
 		}
 		else
+		{
 			mvprintw(y, x, "%s", choices[i]);
+		}
+		// we want an empty line between the menu entries
+		++y;
 		++y;
 	}
 
+	mvprintw(LINES - 1, 1, "%s", domain);
 	mvprintw(LINES - 1, COLS - strlen(footer), "%s", footer);
 
 	refresh();
@@ -120,36 +130,39 @@ void menu_handler(int selected_item)
 	{
 	case 1:
 	{
-		//"NEW GUEST"
-		break;
+		// NEW GUEST
+		endwin();
+		system("/home/xen/nobudget/newguest.bash");
+		exit(0);
 	}
 	case 2:
 	{
-		//"OPERATE GUESTS"
-		syscall_output_example("ls -lh /home","last_console_output.txt");
-		break;
+		// MANAGE GUESTS
+		endwin();
+		system("/home/xen/nobudget/manage-guests.bash");
+		exit(0);
 	}
 	case 3:
 	{
-		//"SUPPORT"
-		// system("cat support.txt");
-		display_support("support.txt");
+		// SUPPORT
+		display_text("support.txt");
 		break;
 	}
 	case 4:
 	{
-		//"QUIT"
+		// QUIT
+		endwin();
 		exit(0);
-		break;
 	}
 	default:
 	{
+		// IDLING
 		break;
 	}
 	}
 }
 
-void display_support(char *support_file_path)
+void display_text(char *support_file_path)
 {
 	/* Displays content of support file on screen
 
@@ -161,7 +174,7 @@ void display_support(char *support_file_path)
 		None
 	*/
 
-	//open a file
+	// open a file
 	FILE *fp;
 	char *line = NULL;
 	size_t len = 0;
@@ -174,6 +187,9 @@ void display_support(char *support_file_path)
 		exit(EXIT_FAILURE);
 	}
 
+	// clear screen before printing output
+	erase();
+
 	// output the text line by line
 	int current_line = 1;
 	while ((read = getline(&line, &len, fp)) != -1)
@@ -182,39 +198,4 @@ void display_support(char *support_file_path)
 		++current_line;
 	}
 	fclose(fp);
-}
-
-void syscall_output_example(char *command, char *temp_log_storage)
-{
-
-	FILE *fp; // stream of console std output
-	FILE *log_file; // file you temporarily store output
-	
-	char line_in_console[1035];
-
-	// Open file for writing
-	log_file = fopen(temp_log_storage, "w");
-	if (log_file == NULL)
-	{
-		exit(EXIT_FAILURE);
-	}
-
-	/* Open the command for reading. */
-	fp = popen(command, "r");
-	if (fp == NULL)
-	{
-		exit(EXIT_FAILURE);
-	}
-
-	/* Read the output a line at a time - output it. */
-	while (fgets(line_in_console, sizeof(line_in_console) - 1, fp) != NULL)
-	{
-		fprintf(log_file, "%s", line_in_console);
-	}
-
-	/* close */
-	pclose(fp);
-	fclose(log_file);
-
-	display_support(temp_log_storage);
 }
