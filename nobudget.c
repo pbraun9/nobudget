@@ -5,7 +5,7 @@ int longest = 0;
 
 char title[] = "Definitely Not a Cloud";
 char domain[] = "angrycow.ru";
-char footer[] = "powered by XEN ";
+char footer[] = "nobudget v0.0 alpha";
 int left_column_length = 28;
 struct menu_ui start_menu;
 char *choices[] = {
@@ -110,7 +110,7 @@ void print_menu(int highlight)
 	}
 
 	mvprintw(LINES - 1, 1, "%s", domain);
-	mvprintw(LINES - 1, COLS - strlen(footer), "%s", footer);
+	mvprintw(LINES - 1, COLS - strlen(footer) - 1, "%s", footer);
 
 	refresh();
 }

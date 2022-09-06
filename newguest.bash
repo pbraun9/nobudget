@@ -1,49 +1,116 @@
 #!/bin/bash
 
-(( debug = 1 ))
+debug=0
 
-function nextavailable {
-	# last used drbd minor
-	last=`sort -n $HOME/guests.csv | tail -1 | cut -f1 -d,`
+[[ $1 = auto ]] && auto=1
 
-	(( avail = last + 1 ))
-	(( debug > 0 )) && echo avail is $avail
-}
+function asksystem {
+	cat <<EOF
 
-clear
-cat <<EOF
+ Which system would you like to deploy?
 
- Which GNU/Linux distribution would you like to have?
-
-  1. Debian 11 (bullseye)
-  2. Slackware64 15.0
-  3. Ubuntu 22 (Jammy Jellyfish)
+  1. Debian 11 (Bullseye)
+  2. NetBSD current (Sep 2022)
+  3. Slackware Linux 15.0
+  4. Ubuntu 22 (Jammy Jellyfish)
 
 EOF
-  #- Sabotage Linux
-echo -n " Type a number: "
-read -r choice
-choice=${choice//[^0-9]}
-#choice=${choice,,}
-(( debug > 0 )) && echo sanitized choice is $choice
+	  #- Sabotage Linux
+	echo -n " Type a number: "
+	read -r choice
+	choice=${choice//[^0-9]}
+	#choice=${choice,,}
+	(( debug > 0 )) && echo sanitized choice is $choice
+	echo
 
-case $choice in
-	1)	tpl=bullseye
-		nextavailable
-		sudo /root/xen/newguest-debian.bash bullseye $avail \
-			&& echo $avail,$tpl >> $HOME/guests.csv
-		;;
-	2)	tpl=slack
-		nextavailable
-		sudo /root/xen/newguest-slack.bash slack $avail \
-			&& echo $avail,$tpl >> $HOME/guests.csv
-		;;
-	3)	tpl=jammy
-		nextavailable
-		sudo /root/xen/newguest-debian.bash jammy $avail \
-			&& echo $avail,$tpl >> $HOME/guests.csv
-		;;
-esac
+	case $choice in
+		1)	tpl=bullseye
+			nextavailable
+			askname
+			sudo /root/xen/new-resource.bash $tpl $avail && \
+			sudo /root/xen/newguest-debian.bash $avail $name \
+				&& echo $avail,$tpl,$name >> $HOME/guests.csv
+			echo " Press Enter to return to previous menu"
+			read -r
+			exit
+			;;
+		2)	tpl=netbsd-current
+			nextavailable
+			askname
+			sudo /root/xen/new-resource.bash $tpl $avail && \
+			sudo /root/xen/newguest-netbsd.bash $avail $name \
+				&& echo $avail,$tpl,$name >> $HOME/guests.csv
+			echo " Press Enter to return to previous menu"
+			read -r
+			exit
+			;;
+		3)	tpl=slack150
+			nextavailable
+			askname
+			sudo /root/xen/new-resource.bash $tpl $avail && \
+			sudo /root/xen/newguest-slack.bash $avail $name \
+				&& echo $avail,$tpl,$name >> $HOME/guests.csv
+			echo " Press Enter to return to previous menu"
+			read -r
+			exit
+			;;
+		4)	tpl=jammy
+			nextavailable
+			askname
+			sudo /root/xen/new-resource.bash $tpl $avail && \
+			sudo /root/xen/newguest-debian.bash $avail $name \
+				&& echo $avail,$tpl,$name >> $HOME/guests.csv
+			echo " Press Enter to return to previous menu"
+			read -r
+			exit
+			;;
+		*)	return
+			;;
+	esac
+}
+
+function nextavailable {
+	# grab last used drbd minor but avoid 200-254 (reserved)
+	last=`cut -f1 -d, $HOME/guests.csv | sort -V | tail -1`
+
+	if (( last < 1024 )); then
+		# while starting a cluster from scratch, guest ids start with 1024 to match DNAT
+		(( avail = 1024 ))
+	else
+		# simply increment to grab the next available guest id
+		# TODO also re-use previously removed guest ids
+		(( avail = last + 1 ))
+	fi
+
+	(( debug > 0 )) && echo avail is $avail
+
+	# 64999+ are reserved
+	(( avail > 65998 )) && echo that is too much instances && exit 1
+}
+
+function askname {
+	echo -n " What target system hostname would you like to set? [dnc$avail]"
+	read -r input
+	name=${input//[^A-Za-z0-9-]}
+	name=${name,,}
+	[[ -z $name ]] && name=dnc$avail
+}
+
+if (( auto == 1 )); then
+	tpl=slack150
+	nextavailable
+	name=dnc$avail
+	sudo /root/xen/new-resource.bash $tpl $avail $name
+	sudo /root/xen/newguest-slack.bash $tpl $avail $name \
+		&& echo $avail,$tpl,$name >> $HOME/guests.csv
+	exit
+fi
+
+clear
+
+while true; do
+	asksystem
+done
 
 echo Press Enter key to exit
 read -r
