@@ -45,6 +45,7 @@ EOF
 			exit
 			;;
 		3)	tpl=slack150
+			#tpl=slackf2fs
 			nextavailable
 			askname
 			sudo /root/xen/new-resource.bash $tpl $avail && \
@@ -85,7 +86,7 @@ function nextavailable {
 	(( debug > 0 )) && echo avail is $avail
 
 	# 64999+ are reserved
-	(( avail > 65998 )) && echo that is too much instances && exit 1
+	(( avail > 65998 )) && echo cannot handle that amount of instances && exit 1
 }
 
 function askname {
@@ -98,10 +99,11 @@ function askname {
 
 if (( auto == 1 )); then
 	tpl=slack150
+	#tpl=slackf2fs
 	nextavailable
 	name=dnc$avail
-	sudo /root/xen/new-resource.bash $tpl $avail $name
-	sudo /root/xen/newguest-slack.bash $tpl $avail $name \
+	sudo /root/xen/new-resource.bash $tpl $avail
+	sudo /root/xen/newguest-slack.bash $avail \
 		&& echo $avail,$tpl,$name >> $HOME/guests.csv
 	exit
 fi
