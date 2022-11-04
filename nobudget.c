@@ -4,8 +4,8 @@ int lenght = 0;
 int longest = 0;
 
 char title[] = "Definitely Not a Cloud";
-char domain[] = "angrycow.ru";
-char footer[] = "nobudget v0.0 alpha";
+char footer_left[] = "pmr.angrycow.ru";
+char footer_right[] = "nobudget v0.0 alpha";
 int left_column_length = 28;
 struct menu_ui start_menu;
 char *choices[] = {
@@ -72,6 +72,26 @@ int main()
 		print_menu(highlight);
 		menu_handler(choice);
 		choice = 0;
+
+		initscr();
+
+		// debug mode allows ^C ^Z
+		cbreak();
+		//raw();
+
+		keypad(stdscr, TRUE);
+		noecho();
+		curs_set(0);
+
+		int i;
+		for (i = 0; i < n_choices; ++i)
+		{
+			lenght = strlen(choices[i]);
+			if (lenght > longest)
+				longest = lenght;
+		}
+
+		print_menu(highlight);
 		// if(choice != 0)	/* User did a choice come out of the infinite loop */
 		// 	break;
 	}
@@ -109,8 +129,8 @@ void print_menu(int highlight)
 		++y;
 	}
 
-	mvprintw(LINES - 1, 1, "%s", domain);
-	mvprintw(LINES - 1, COLS - strlen(footer) - 1, "%s", footer);
+	mvprintw(LINES - 1, 1, "%s", footer_left);
+	mvprintw(LINES - 1, COLS - strlen(footer_right) - 1, "%s", footer_right);
 
 	refresh();
 }
@@ -128,37 +148,37 @@ void menu_handler(int selected_item)
 	*/
 	switch (selected_item)
 	{
-	case 1:
-	{
-		// NEW GUEST
-		endwin();
-		system("/home/xen/nobudget/newguest.bash");
-		exit(0);
-	}
-	case 2:
-	{
-		// MANAGE GUESTS
-		endwin();
-		system("/home/xen/nobudget/manage-guests.bash");
-		exit(0);
-	}
-	case 3:
-	{
-		// SUPPORT
-		display_text("support.txt");
-		break;
-	}
-	case 4:
-	{
-		// QUIT
-		endwin();
-		exit(0);
-	}
-	default:
-	{
-		// IDLING
-		break;
-	}
+		case 1:
+		{
+			// NEW GUEST
+			endwin();
+			system("/usr/local/bin/new-guest.bash");
+			break;
+		}
+		case 2:
+		{
+			// MANAGE GUESTS
+			endwin();
+			system("/usr/local/bin/manage-guests.bash");
+			break;
+		}
+		case 3:
+		{
+			// SUPPORT
+			display_text("/usr/local/lib/support.txt");
+			break;
+		}
+		case 4:
+		{
+			// QUIT
+			endwin();
+			exit(0);
+		}
+		default:
+		{
+			// IDLING
+			break;
+		}
 	}
 }
 
