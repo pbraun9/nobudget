@@ -100,7 +100,7 @@ function manageguests {
 			allguests
 			;;
 		n*)
-			$HOME/nobudget/newguest.bash
+			$HOME/nobudget/new-guest.bash
 			;;
 		r*)
 			echo rebooting $guest
@@ -135,7 +135,7 @@ function manageguests {
 
 source $HOME/nobudget/functions.bash
 
-[[ ! -f $HOME/nobudget/newguest.bash ]] && bomb could not find $HOME/nobudget/newguest.bash
+[[ ! -x /usr/local/bin/new-guest.bash ]] && bomb could not find /usr/local/bin/new-guest.bash executable
 
 clear
 echo MANAGE GUESTS

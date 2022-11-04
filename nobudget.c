@@ -18,12 +18,8 @@ int n_choices = sizeof(choices) / sizeof(char *);
 
 int menu_is_active = 1;
 
-int main()
+void startwin()
 {
-	int highlight = 1;
-	int choice = 0;
-	int c;
-
 	initscr();
 
 	// debug mode allows ^C ^Z
@@ -33,6 +29,16 @@ int main()
 	keypad(stdscr, TRUE);
 	noecho();
 	curs_set(0);
+	return;
+}
+
+int main()
+{
+	int highlight = 1;
+	int choice = 0;
+	int c;
+
+	startwin();
 
 	int i;
 	for (i = 0; i < n_choices; ++i)
@@ -69,27 +75,8 @@ int main()
 			break;
 		}
 		}
-		print_menu(highlight);
 		menu_handler(choice);
 		choice = 0;
-
-		initscr();
-
-		// debug mode allows ^C ^Z
-		cbreak();
-		//raw();
-
-		keypad(stdscr, TRUE);
-		noecho();
-		curs_set(0);
-
-		int i;
-		for (i = 0; i < n_choices; ++i)
-		{
-			lenght = strlen(choices[i]);
-			if (lenght > longest)
-				longest = lenght;
-		}
 
 		print_menu(highlight);
 		// if(choice != 0)	/* User did a choice come out of the infinite loop */
@@ -153,6 +140,7 @@ void menu_handler(int selected_item)
 			// NEW GUEST
 			endwin();
 			system("/usr/local/bin/new-guest.bash");
+			startwin();
 			break;
 		}
 		case 2:
@@ -160,6 +148,7 @@ void menu_handler(int selected_item)
 			// MANAGE GUESTS
 			endwin();
 			system("/usr/local/bin/manage-guests.bash");
+			startwin();
 			break;
 		}
 		case 3:

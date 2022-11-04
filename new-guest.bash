@@ -1,8 +1,20 @@
 #!/bin/bash
 
-debug=0
+(( debug = 0 ))
 
-[[ $1 = auto ]] && auto=1
+function bomb {
+	echo error: $@
+	exit 1
+}
+
+function ready {
+	cat <<EOF
+ Wait 30 seconds until spanning tree settles down and you will be able reach this system as such.
+
+	ssh pmr.angrycow.ru -p $avail -l root
+
+EOF
+}
 
 function asksystem {
 	cat <<EOF
@@ -29,7 +41,8 @@ EOF
 			askname
 			sudo /root/xen/new-resource.bash $tpl $avail && \
 			sudo /root/xen/newguest-debian.bash $avail $name \
-				&& echo $avail,$tpl,$name >> $HOME/guests.csv
+				&& echo $avail,$tpl,$name >> $HOME/guests.csv \
+				&& ready
 			echo " Press Enter to return to previous menu"
 			read -r
 			exit
@@ -39,7 +52,8 @@ EOF
 			askname
 			sudo /root/xen/new-resource.bash $tpl $avail && \
 			sudo /root/xen/newguest-netbsd.bash $avail $name \
-				&& echo $avail,$tpl,$name >> $HOME/guests.csv
+				&& echo $avail,$tpl,$name >> $HOME/guests.csv \
+				&& ready
 			echo " Press Enter to return to previous menu"
 			read -r
 			exit
@@ -50,7 +64,8 @@ EOF
 			askname
 			sudo /root/xen/new-resource.bash $tpl $avail && \
 			sudo /root/xen/newguest-slack.bash $avail $name \
-				&& echo $avail,$tpl,$name >> $HOME/guests.csv
+				&& echo $avail,$tpl,$name >> $HOME/guests.csv \
+				&& ready
 			echo " Press Enter to return to previous menu"
 			read -r
 			exit
@@ -60,7 +75,8 @@ EOF
 			askname
 			sudo /root/xen/new-resource.bash $tpl $avail && \
 			sudo /root/xen/newguest-debian.bash $avail $name \
-				&& echo $avail,$tpl,$name >> $HOME/guests.csv
+				&& echo $avail,$tpl,$name >> $HOME/guests.csv \
+				&& ready
 			echo " Press Enter to return to previous menu"
 			read -r
 			exit
@@ -71,8 +87,13 @@ EOF
 }
 
 function nextavailable {
-	# grab last used drbd minor but avoid 200-254 (reserved)
-	last=`cut -f1 -d, $HOME/guests.csv | sort -V | tail -1`
+	if [[ -f $HOME/guests.csv ]]; then
+		# grab last used drbd minor but avoid 200-254 (reserved)
+		last=`cut -f1 -d, $HOME/guests.csv | sort -V | tail -1`
+	else
+		# TODO
+		last=1023
+	fi
 
 	if (( last < 1024 )); then
 		# while starting a cluster from scratch, guest ids start with 1024 to match DNAT
@@ -109,6 +130,10 @@ if (( auto == 1 )); then
 fi
 
 clear
+
+[[ -z $HOME ]] && bomb HOME not defined
+
+[[ $1 = auto ]] && auto=1
 
 while true; do
 	asksystem
