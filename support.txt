@@ -1,5 +1,11 @@
 
-support@angrycow.ru for support requests
+Angrycow is brought to you by Nethence Systems
 
-contact@angrycow.ru for feedback a feature requests
+For bugs and feature requests
+
+	Nethence Support <support@nethence.com>
+
+For general feedback and questions
+
+	Nethence <contact@nethence.com>
 

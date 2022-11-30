@@ -17,17 +17,20 @@ EOF
 }
 
 function asksystem {
+	echo
+	echo NEW GUEST
+	echo
 	cat <<EOF
-
  Which system would you like to deploy?
 
   1. Debian 11 (Bullseye)
   2. NetBSD current (Sep 2022)
-  3. Slackware Linux 15.0
+  3. Slackware Linux 64-bit 15.0
   4. Ubuntu 22 (Jammy Jellyfish)
 
 EOF
-	  #- Sabotage Linux
+# Sabotage Linux
+
 	echo -n " Type a number: "
 	read -r choice
 	choice=${choice//[^0-9]}
@@ -139,6 +142,6 @@ while true; do
 	asksystem
 done
 
-echo Press Enter key to exit
+echo -n Press Enter key to return to main menu
 read -r
 

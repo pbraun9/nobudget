@@ -5,7 +5,7 @@ int longest = 0;
 
 char title[] = "Definitely Not a Cloud";
 char footer_left[] = "pmr.angrycow.ru";
-char footer_right[] = "nobudget v0.0 alpha";
+char footer_right[] = "nobudget v0.0.1";
 int left_column_length = 28;
 struct menu_ui start_menu;
 char *choices[] = {
@@ -154,7 +154,10 @@ void menu_handler(int selected_item)
 		case 3:
 		{
 			// SUPPORT
-			display_text("/usr/local/lib/support.txt");
+			endwin();
+			//display_text("/usr/local/lib/support.txt");
+			system("/usr/local/bin/display-support.bash");
+			startwin();
 			break;
 		}
 		case 4:
@@ -208,3 +211,4 @@ void display_text(char *support_file_path)
 	}
 	fclose(fp);
 }
+

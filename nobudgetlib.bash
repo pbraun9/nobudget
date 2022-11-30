@@ -7,9 +7,9 @@ function usage {
 }
 
 function bomb {
-        time=`date +%s`
+        time=`date +%Y-%m-%d %H:%M:%S`
 
-        echo $time - user=$user guestid=$guestid minor=$minor guest=$guest name=$name - $@ >> /var/log/dnc.error.log
+        echo $time - user=$user guestid=$guestid minor=$minor guest=$guest name=$name - $@ >> /var/tmp/nobudget.error.log
         echo
         echo Error: $@
         echo

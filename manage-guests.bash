@@ -6,21 +6,21 @@ debug=0
 function showhelp {
 	cat <<EOF
 
- Available commands
-
-        console         reach a guest console
-        create          power on a guest
-        destroy         brutally power off a guest
         list            list all guests and their statuses
         new		deploy a new guest
-        reboot          reboot a guest
-        shutdown        gracefully power off a guest
         terminate       terminate a guest and its storage
 
-        back		return to previous menu
-	quit		close this session
+        start		power on a guest
+        reboot          reboot a guest
+        stop		gracefully shutdown and power off a guest
+        destroy         brutally power off a guest
+
+        console         connect to a guest console
+
+	exit		return to main menu
 
 EOF
+	#quit		close this session
 }
 
 function allguests {
@@ -115,17 +115,18 @@ function manageguests {
 		terminate)
 			echo TODO TERMINATE A GUEST
 			;;
-		b*)
-			echo " Press Enter to return to previous menu"
-			read -r
+		e*|q*)
+			#echo
+			#echo -n Press Enter key to return to main menu
+			#read -r
 			exit
 			;;
-		q*)
-			echo
-			echo " Press Enter to close the session"
-			read -r
-			exit
-			;;
+		#q*)
+		#	echo
+		#	echo -n Press Enter to close the session
+		#	read -r
+		#	exit
+		#	;;
 		*)
 			echo unknown command
 			;;
@@ -133,14 +134,15 @@ function manageguests {
 	unset cmd
 }
 
-source $HOME/nobudget/functions.bash
 
+[[ ! -f /usr/local/lib/nobudgetlib.bash ]] && bomb could not find /usr/local/lib/nobudgetlib.bash
 [[ ! -x /usr/local/bin/new-guest.bash ]] && bomb could not find /usr/local/bin/new-guest.bash executable
 
+source /usr/local/lib/nobudgetlib.bash
+
 clear
-echo MANAGE GUESTS
 echo
-allguests
+echo MANAGE GUESTS
 echo
 echo Enter ? for help
 

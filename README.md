@@ -1,16 +1,20 @@
 # No Budget
 
-Install nobudget onto the system.
+_text-mode user interface for [convergent XEN farms](https://github.com/pbraun9/xen)_
+
+Build and install nobudget onto the system.
 
 	cd nobudget/
 	make
 	make install
 
-Assuming SSH is running on an exotic port, take over 22/tcp.
+Eventually disable password-based authentication altogether and take over 22/tcp.
+
+_assuming the casual SSH daemon is running on another port_
 
 	vi /etc/ssh/sshd_config_nobudget
 
-	AllowGroups budgetusers
+	AllowGroups nobudget
 	PermitRootLogin no
 	Port 22
 	PidFile /var/run/sshd_nobudget.pid
@@ -35,4 +39,15 @@ Assuming SSH is running on an exotic port, take over 22/tcp.
 	vi /etc/rc.d/rc.local
 
 	/usr/sbin/sshd -f /etc/ssh/sshd_config_nobudget && echo NOBUDGET SSHD
+
+You are now ready to create users and let them reach your IaaS console.
+
+	user=USERNAME
+
+	groupadd nobudget
+	useradd -m -g nobudget -s /usr/local/bin/nobudget $user
+	chmod 700 /home/$user/
+	passwd --unlock $user
+
+and put user's SSH public key in place.
 
