@@ -3,6 +3,18 @@ set -e
 
 debug=0
 
+function bomb {
+        time=`date "+%Y-%m-%d %H:%M:%S"`
+
+        echo "$time - error: $@" >> /var/tmp/nobudget.$USER.error.log 2>&1
+        echo
+        echo "error: $@"
+        echo
+
+	unset time
+        exit 1
+}
+
 function showhelp {
 	cat <<EOF
 
@@ -70,7 +82,7 @@ function des {
 
 }
 
-function manageguests {
+function manage_guests {
 	echo -n "> "
 	read -r cmd
 	#cmd=${cmd//[^A-Za-z0-9-]}
@@ -128,25 +140,26 @@ function manageguests {
 		#	exit
 		#	;;
 		*)
-			echo unknown command
 			;;
 	esac
 	unset cmd
 }
 
+clear
 
-[[ ! -f /usr/local/lib/nobudgetlib.bash ]] && bomb could not find /usr/local/lib/nobudgetlib.bash
+[[ -z $USER ]] && bomb USER not defined - should be `whoami`
+[[ -z $HOME ]] && bomb HOME not defined for $USER
+[[ ! -d /data/users/ ]] && bomb /data/ does not seem to be mounted - cluster state is non-optimal
+[[ ! -d $HOME/ ]] && bomb $HOME/ does not exist
+
 [[ ! -x /usr/local/bin/new-guest.bash ]] && bomb could not find /usr/local/bin/new-guest.bash executable
 
-source /usr/local/lib/nobudgetlib.bash
-
-clear
 echo
 echo MANAGE GUESTS
 echo
 echo Enter ? for help
 
 while true; do
-	manageguests
+	manage_guests
 done
 

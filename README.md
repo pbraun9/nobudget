@@ -14,7 +14,7 @@ _assuming the casual SSH daemon is running on another port_
 
 	vi /etc/ssh/sshd_config_nobudget
 
-	AllowGroups nobudget
+	AllowGroups budgetusers
 	PermitRootLogin no
 	Port 22
 	PidFile /var/run/sshd_nobudget.pid
@@ -35,18 +35,23 @@ _assuming the casual SSH daemon is running on another port_
 	UseDNS no
 	UsePAM no
 	X11Forwarding no
+	AllowTcpForwarding no
 
 	vi /etc/rc.d/rc.local
 
-	/usr/sbin/sshd -f /etc/ssh/sshd_config_nobudget && echo NOBUDGET SSHD
+	echo -n starting nobudget sshd ...
+	/usr/sbin/sshd -f /etc/ssh/sshd_config_nobudget && echo done || echo FAIL
 
-You are now ready to create users and let them reach your IaaS console.
+hard-code the shared group for nobudget users
+
+	groupadd -g 1004 budgetusers
+
+create users and let them reach the text UI
 
 	user=USERNAME
 
-	groupadd nobudget
-	useradd -m -g nobudget -s /usr/local/bin/nobudget $user
-	chmod 700 /home/$user/
+	useradd -m -g budgetusers -b /data/users -s /usr/local/bin/nobudget $user
+	chmod 700 /data/users/$user/
 	passwd --unlock $user
 
 and put user's SSH public key in place.
