@@ -5,9 +5,10 @@ set -e
 # shell-based PoC to register nobudget users
 #
 
-debug=1
+debug=0
 
 provider=Angrycow
+support=support@angrycow.ru
 
 source /usr/local/lib/nobudgetlib.ksh
 
@@ -39,7 +40,7 @@ function ask_user {
 	unset tmp
 }
 
-function askemail {
+function ask_email {
 	print -n Please enter your email: \\c
 	read -r tmp
 	tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:]_.@-]//g'`
@@ -54,12 +55,21 @@ function askemail {
 		print 
         	unset tmp tmp2 email
 
-		askemail
+		ask_email
 	fi
 	unset tmp tmp2
+
+	# TODO help the user to recover exitinng account instead
+        tmp=`getent passwd | grep :$email:`
+        if [[ -n $tmp ]]; then
+                echo email $email is already registered
+                unset tmp
+                ask_email
+        fi
+        unset tmp
 }
 
-function askpubkey {
+function ask_pubkey {
 	print Please enter your SSH public key and comment \(one line\):
 	read -r tmp
 	tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:] _./@-]//g'`
@@ -74,7 +84,7 @@ function askpubkey {
                 print
         	unset tmp tmp2 pubkey
 
-                askpubkey
+                ask_pubkey
         fi
         unset tmp tmp2
 	pubkeytype=`echo $pubkey | awk '{print $1}'`
@@ -126,8 +136,8 @@ clear
 # REGISTRATION FORM
 cat <<EOF
 
-	Welcome to Definitely Not a Cloud
-	       (Proof of Concept)
+	      Welcome to $provider
+	         (alpha test)
 
  You will be asked the following informations to register:
 
@@ -145,8 +155,8 @@ read -r
 print ''
 
 ask_user
-askemail
-askpubkey
+ask_email
+ask_pubkey
 
 send_email_code
 ask_email_code
@@ -158,34 +168,39 @@ debugvar pubkey
 debugvar comment
 debugvar email
 
+# this is now tested earlier
 #[[ -n `grep ^$user: /etc/passwd` ]] && bomb user $user already exists - please try another user name
-[[ -n `getent passwd | grep ^$user:` ]] && bomb user $user already exists - please try another user name
+#[[ -n `getent passwd | grep ^$user:` ]] && bomb echo user $user already exists - please try another user name
 
 mkdir -p /data/users/
-[[ -d /data/users/$user/ ]] && bomb user $user does not exist yet but its homedir /data/users/$user/ already exists
+[[ -d /data/users/$user/ ]] && bomb user $user does not exist yet but its homedir already exists
 
 # determine who's the current nis master
-echo -n search for NIS master server...
+echo -n searching for NIS master server...
 ypmaster=`ypwhich` && echo done
 
 # use internal network SSH service
-ssh $ypmaster -l register-helper -p 64999 "sudo nobudget-update-nis $user"
+ssh $ypmaster -l register-helper -p 64999 "sudo nobudget-update-nis $user $email"
 
 #echo creating budget user $user ...
 sudo nobudget-pubkey $user $pubkeytype $pubkey $comment
 
 echo -n sending confirmation email...
 cat <<EOF | mail -s "$provider account registered" $email && echo done
-Welcome to $provider, your account $user is registered.
 
- You can now login to your $provider account and manage your guest systems as follows.
+ Welcome to $provider, your account $user is registered.
+
+ You can now login to your $provider account and manage guest systems as follows.
 
         ssh pmr.angrycow.ru -l $user
+
+-- 
+This is alpha test - please send issues and feedback to <$support>
 EOF
 
 cat <<EOF
 
- You can now login to your $provider account and manage your guest systems as follows.
+ You can now login to your $provider account and manage guest systems as follows.
 
         ssh pmr.angrycow.ru -l $user
 

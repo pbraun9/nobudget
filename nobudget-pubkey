@@ -6,13 +6,12 @@ user=$1
 pubkeytype=$2
 pubkey=$3
 comment=$4
-#email=$5
 
 # was created with useradd -m
-[[ ! -d /data/users/$user/ ]] && echo folder /data/users/$user/ does not exist && exit 1
+[[ ! -d /data/users/$user/ ]] && echo $user homedir does not exist && exit 1
 
 # doesn't exist yet
-[[ -d /data/users/$user/.ssh/ ]] && echo folder /data/users/$user/.ssh/ already exists && exit 1
+[[ -d /data/users/$user/.ssh/ ]] && echo $user .ssh/ folder already exists && exit 1
 
 echo -n adding SSH public key for $user ...
 mkdir /data/users/$user/.ssh/
@@ -23,7 +22,4 @@ chown -R $user. /data/users/$user/
 chmod 700 /data/users/$user/
 chmod 700 /data/users/$user/.ssh/
 chmod 600 /data/users/$user/.ssh/authorized_keys && echo done
-
-#echo -n echo additional information about user...
-#echo $email >> /data/users/$user/email && echo done
 

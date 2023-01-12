@@ -3,7 +3,7 @@
 int lenght = 0;
 int longest = 0;
 
-char title[] = "Definitely Not a Cloud";
+char title[] = "Angrycow";
 char footer_left[] = "pmr.angrycow.ru";
 char footer_right[] = "nobudget v0.0.1";
 int left_column_length = 28;

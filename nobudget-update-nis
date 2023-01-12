@@ -3,15 +3,15 @@ set -e
 
 # sudo from register-helper for the specific purpose of creating user on the YP master server
 
-[[ -z $1 ]] && echo usage: ${0##*/} user && exit 1
+[[ -z $2 ]] && echo usage: ${0##*/} user email && exit 1
 user=$1
+email=$2
 
 [[ ! -x `which pwgen` ]] && echo pwgen executable not found && exit 1
 
 # TODO enable PAM for budgetusers instead of wheel
 echo -n creating UNIX user $user ...
-useradd -m -g wheel -b /data/users -s /usr/local/bin/nobudget $user && echo done
-# -c $email
+useradd -m -g wheel -c $email -b /data/users -s /usr/local/bin/nobudget $user && echo done
 
 echo -n unlocking user $user ...
 unalias pwgen 2>/dev/null || true
