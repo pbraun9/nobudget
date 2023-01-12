@@ -10,6 +10,9 @@ function bomb {
         echo "error: $@"
         echo
 
+        echo -n press enter key to exit
+        read -r
+
 	unset time
         exit 1
 }

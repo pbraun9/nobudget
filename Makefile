@@ -14,12 +14,15 @@ nobudget-debug:
 
 install:
 	install -d $(DESTDIR)$(PREFIX)/bin/
-	install -m 755 nobudget $(DESTDIR)$(PREFIX)/bin/
-	install -m 755 new-guest.bash $(DESTDIR)$(PREFIX)/bin/
-	install -m 755 manage-guests.bash $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 display-support.bash $(DESTDIR)$(PREFIX)/bin/
-	@#install -d $(DESTDIR)$(PREFIX)/lib/
-	@#install -m 644 support.txt $(DESTDIR)$(PREFIX)/lib/
+	install -m 755 manage-guests.bash $(DESTDIR)$(PREFIX)/bin/
+	install -m 755 new-guest.bash $(DESTDIR)$(PREFIX)/bin/
+	install -m 755 nobudget $(DESTDIR)$(PREFIX)/bin/
+	install -m 755 nobudget-register.ksh $(DESTDIR)$(PREFIX)/bin/
+	install -d $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 nobudgetlib.ksh $(DESTDIR)$(PREFIX)/lib/
+	install -m 755 nobudget-update-nis $(DESTDIR)$(PREFIX)/sbin/
+	install -m 755 nobudget-pubkey $(DESTDIR)$(PREFIX)/sbin/
 
 clean:
 	rm -f nobudget

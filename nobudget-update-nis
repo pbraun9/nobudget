@@ -1,0 +1,34 @@
+#!/bin/bash
+set -e
+
+# sudo from register-helper for the specific purpose of creating user on the YP master server
+
+[[ -z $1 ]] && echo usage: ${0##*/} user && exit 1
+user=$1
+
+[[ ! -x `which pwgen` ]] && echo pwgen executable not found && exit 1
+
+# TODO enable PAM for budgetusers instead of wheel
+echo -n creating UNIX user $user ...
+useradd -m -g wheel -b /data/users -s /usr/local/bin/nobudget $user && echo done
+# -c $email
+
+echo -n unlocking user $user ...
+unalias pwgen 2>/dev/null || true
+(echo -n "$user:"; pwgen 16 1) | chpasswd $user & echo done
+
+# we want the maps to be re-generated as soon as possible
+# so the host can see the user eventually already exists
+echo -n updating NIS...
+cd /var/yp/ && make >/dev/null && echo done
+
+#
+# trash
+#
+
+# debian uucp UID --> wheel on slackware: replace wheel by uuid if nis master is debian
+
+# avoid bad return code - passwordless is fine
+#passwd --unlock $user && echo account unlocked" || true
+#passwd --delete $user
+
