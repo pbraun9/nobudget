@@ -8,7 +8,9 @@ set -e
 debug=0
 
 provider=Angrycow
+from=noreply@angrycow.ru
 support=support@angrycow.ru
+# assuming postfix creates message-id header (always_add_missing_headers)
 
 source /usr/local/lib/nobudgetlib.ksh
 
@@ -97,7 +99,20 @@ function send_email_code {
 	code=`pwgen --no-capitalize --no-numerals --secure 5 1 | tr a-z A-Z`
 
 	print "sending registration code to $email (STARTTLS)... \c"
-	print Here is the code to register at $provider: $code | mail -s "$provider registration code" $email && echo done
+	#print Here is the code to register at $provider: $code | mail -s "$provider registration code" $email && echo done
+	cat <<EOF | sendmail -t && echo done
+From: $provider <$from>
+To: $email
+Subject: $provider registration code
+
+Here is the code to register at $provider: $code
+
+-- 
+This is alpha test software
+<https://github.com/pbraun9/nobudget>
+Please send issues and feedback to <$support>
+EOF
+
 }
 
 function ask_email_code {
@@ -186,11 +201,15 @@ ssh $ypmaster -l register-helper -p 64999 "sudo nobudget-update-nis $user $email
 sudo nobudget-pubkey $user $pubkeytype $pubkey $comment
 
 echo -n sending confirmation email...
-cat <<EOF | mail -s "$provider account registered" $email && echo done
+#cat <<EOF | mail -s "$provider account registered" $email && echo done
+cat <<EOF | sendmail -t && echo done
+From: $provider <$from>
+To: $email
+Subject: $provider account registered
 
- Welcome to $provider, your account $user is registered.
+Welcome to $provider, your account $user is registered.
 
- You can now login to your $provider account and manage guest systems as follows.
+You can now login and manage guest systems as follows.
 
         ssh pmr.angrycow.ru -l $user
 
@@ -200,7 +219,7 @@ EOF
 
 cat <<EOF
 
- You can now login to your $provider account and manage guest systems as follows.
+You can now login and manage guest systems as follows.
 
         ssh pmr.angrycow.ru -l $user
 

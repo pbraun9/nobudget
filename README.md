@@ -2,7 +2,7 @@
 
 _text-mode user interface for [convergent XEN farms](https://github.com/pbraun9/xen)_
 
-## Install
+## Installation
 
 Build and install nobudget onto the system.
 
@@ -10,14 +10,13 @@ Build and install nobudget onto the system.
 	make
 	make install
 
-Prepare an anonymous user that will be used for the registration process
+## Sysprep for the management console
 
-	groupadd -g 1002 register
-	useradd -m -u 1002 -g register -s /usr/local/bin/nobudget-register.ksh register
-	passwd --unlock register
-	#passwd --delete register
+hard-code a shared group for nobudget users
 
-Disable password authentication but for that specific user and take over 22/tcp.
+	groupadd -g 1004 budgetusers
+
+disable password authentication and take over 22/tcp
 
 _assuming the casual SSH daemon is running on another port_
 
@@ -46,6 +45,40 @@ _assuming the casual SSH daemon is running on another port_
 	X11Forwarding no
 	AllowTcpForwarding no
 
+enable at boot-time
+
+	vi /etc/rc.d/rc.local
+
+	echo -n starting nobudget sshd ...
+	/usr/sbin/sshd -f /etc/ssh/sshd_config_nobudget && echo done || echo FAIL
+
+## Operations for the management console
+
+create a user for testing
+
+	useradd -m -u 1004 -g budgetusers -b /data/users -s /usr/local/bin/nobudget budgetuser
+	passwd --delete budgetuser
+	passwd --unlock budgetuser
+	chmod 700 /data/users/budgetuser/
+
+and put QA's SSH public key in place.
+
+## Sysprep for the registration process
+
+prepare a user that will be used for the registration process
+
+	groupadd -g 1002 register
+	useradd -m -u 1002 -g register -s /usr/local/bin/nobudget-register.ksh register
+	passwd --delete register
+	passwd --unlock register
+	chmod 700 /home/register/
+
+note mailx wants $HOME to exist - this is why we provided a true homedir
+
+add this onto sshd_config_nobudget - enable empty password for that specific user
+
+        vi /etc/ssh/sshd_config_nobudget
+
 	Match user register
 		AllowGroups register
 		AllowUsers register
@@ -53,41 +86,39 @@ _assuming the casual SSH daemon is running on another port_
 		PasswordAuthentication yes
 		PermitEmptyPasswords yes
 
-Note mailx wants $HOME to exist - this is why we provided a true homedir
+also create a dedicated user for handling priviledged commands
 
-	ls -alF /home/register/
+	groupadd -g 1003 register-helper
+        useradd -m -u 1003 -g register-helper -s /bin/bash register-helper
 
-Enable at system startup
+tune sudo accordingly
 
-	vi /etc/rc.d/rc.local
+	vi /etc/sudoers
 
-	echo -n starting nobudget sshd ...
-	/usr/sbin/sshd -f /etc/ssh/sshd_config_nobudget && echo done || echo FAIL
+	# this is for the YP master - calling pmr1 on the internal network SSH service
+	register-helper ALL=(root) NOPASSWD: /usr/local/sbin/nobudget-update-nis
 
-## Operations
+	# this is for any node further creating NIS user on the shared-disk
+	register ALL=(root) NOPASSWD: /usr/local/sbin/nobudget-pubkey
 
-Create new users using registration process as follows.
+## Operations for the registration process
+
+you are now ready to proceed with online user registration
 
 	ssh your.domain.tld -l register
 
-If not using the anonymous registration process, you can otherwise create users manually and let them reach the text UI as follows.
-
-	user=USERNAME
-
-	useradd -m -g budgetusers -b /data/users -s /usr/local/bin/nobudget $user
-	chmod 700 /data/users/$user/
-	passwd --unlock $user
-	#passwd --delete $user
-
-and put user's SSH public key in place.
-
 ## Cluster requirements (optional)
 
-Hard-code the shared group for nobudget users (users can be [NIS](https://pub.nethence.com/network/nis-master) or LDAP powered).
+nobudget users can be [NIS](https://pub.nethence.com/network/nis-master) or LDAP powered
 
-	groupadd -g 1004 budgetusers
+make sure NIS starts serving at UID and GID 1005
 
-Prepare SSH host keys to be shared across the cluster nodes, so users don't notice when ever the [keepalived](https://pub.nethence.com/daemons/keepalived) VIP moves around.
+	vi /etc/yp/Makefile
+
+	MINUID=1005
+	MINGID=1005
+
+prepare SSH host keys to be shared across the cluster nodes, so users don't notice when ever the [keepalived](https://pub.nethence.com/daemons/keepalived) VIP moves around.
 
 	cluster=CLUSTER-NAME
 

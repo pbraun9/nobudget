@@ -1,11 +1,9 @@
 
-Angrycow is brought to you by Nethence Systems
+For general feedback, questions and feature requests
 
-For bugs and feature requests
+	Angrycow <contact@angrycow.ru>
 
-	Nethence Support <support@nethence.com>
+For bugs and issues
 
-For general feedback and questions
-
-	Nethence <contact@nethence.com>
+	Angrycow Support <support@angrycow.ru>
 
