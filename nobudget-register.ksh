@@ -33,13 +33,8 @@ function ask_user {
 	fi
 	unset tmp tmp2
 
-	tmp=`getent passwd | grep ^$user:`
-	if [[ -n $tmp ]]; then
-		echo user $user already exists - please try another user name
-		unset tmp
-		ask_user
-	fi
-	unset tmp
+	# TODO only root sees NIS users? - avoid sudo here
+	[[ ! -z `sudo getent passwd | grep ^$user:` ]] && echo user $user already exists - please try another user name && ask_user || true
 }
 
 function ask_email {
@@ -154,9 +149,9 @@ cat <<EOF
 	      Welcome to $provider
 	         (alpha test)
 
- You will be asked the following informations to register:
+ You will be asked the following informations to create an account:
 
-	o  New username
+	o  Define a username
 
 	o  Your email address
 
@@ -205,17 +200,20 @@ echo -n sending confirmation email...
 cat <<EOF | sendmail -t && echo done
 From: $provider <$from>
 To: $email
-Subject: $provider account registered
+Subject: Welcome to $provider
 
-Welcome to $provider, your account $user is registered.
+Your $provider account $user is now registered.
 
-You can now login and manage guest systems as follows.
+Here is how to access the management interface.
 
         ssh pmr.angrycow.ru -l $user
 
 -- 
-This is alpha test - please send issues and feedback to <$support>
+This is alpha test software
+<https://github.com/pbraun9/nobudget>
+Please send issues and feedback to <$support>
 EOF
+# Here is how to login and manage your guest systems.
 
 cat <<EOF
 

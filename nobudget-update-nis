@@ -9,8 +9,10 @@ email=$2
 
 [[ ! -x `which pwgen` ]] && echo pwgen executable not found && exit 1
 
+# wheel group - workaround for pam not to complain about NIS user password
 echo -n creating UNIX user $user ...
-useradd -m -g budgetusers -c $email -b /data/users -s /usr/local/bin/nobudget $user && echo done
+useradd -m -g wheel -c $email -b /data/users -s /usr/local/bin/nobudget $user && echo done
+# -g budgetusers
 
 echo -n unlocking user $user ...
 unalias pwgen 2>/dev/null || true

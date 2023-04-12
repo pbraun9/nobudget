@@ -22,7 +22,7 @@ _assuming the casual SSH daemon is running on another port_
 
 	vi /etc/ssh/sshd_config_nobudget
 
-	AllowGroups budgetusers
+	AllowGroups budgetusers wheel
 	PermitRootLogin no
 	Port 22
 	PidFile /var/run/sshd_nobudget.pid
@@ -63,6 +63,16 @@ create a user for testing
 
 and put QA's SSH public key in place.
 
+<!--
+here's a workaround for sudo and pam not to complain about NIS users
+
+	cd /etc/
+	cp -R pam.d/ pam.d.dist/
+	vi pam.d/su
+
+	auth            sufficient      pam_wheel.so trust use_uid
+-->
+
 ## Sysprep for the registration process
 
 prepare a user that will be used for the registration process
@@ -99,7 +109,21 @@ tune sudo accordingly
 	register-helper ALL=(root) NOPASSWD: /usr/local/sbin/nobudget-update-nis
 
 	# this is for any node further creating NIS user on the shared-disk
+	# and checking NIS user existance with getent
 	register ALL=(root) NOPASSWD: /usr/local/sbin/nobudget-pubkey
+	register ALL=(root) NOPASSWD: /usr/bin/getent passwd
+
+	# this is for registered users to create and manage guests
+	# used by nobudget/new-guest.bash
+	%wheel ALL=(root) NOPASSWD: /usr/local/sbin/dnc-new-resource.bash
+	%wheel ALL=(root) NOPASSWD: /usr/local/sbin/dnc-newguest-debian.bash
+	%wheel ALL=(root) NOPASSWD: /usr/local/sbin/dnc-newguest-netbsd.bash
+	%wheel ALL=(root) NOPASSWD: /usr/local/sbin/dnc-newguest-slack.bash
+	# used by nobudget/manage-guests.bash
+	%wheel ALL=(root) NOPASSWD: /usr/local/sbin/dnc-running-guest.bash
+	%wheel ALL=(root) NOPASSWD: /usr/local/sbin/dnc-startguest-lowram.bash
+	%wheel ALL=(root) NOPASSWD: /usr/local/sbin/dnc-rebootguest.bash
+	%wheel ALL=(root) NOPASSWD: /usr/local/sbin/dnc-shutdown-guest.bash
 
 ## Operations for the registration process
 

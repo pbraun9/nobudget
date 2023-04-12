@@ -3,137 +3,155 @@ set -e
 
 debug=0
 
-function bomb {
-        time=`date "+%Y-%m-%d %H:%M:%S"`
-
-        echo "$time - error: $@" >> /var/tmp/nobudget.$USER.error.log 2>&1
-        echo
-        echo "error: $@"
-        echo
-
-	echo -n press enter key to exit
-	read -r
-
-	unset time
-        exit 1
-}
-
-function showhelp {
+function show_help {
 	cat <<EOF
 
-        list            list all guests and their statuses
-        new		deploy a new guest
-        terminate       terminate a guest and its storage
+             list		list all guests and their statuses
+              new		create a new guest
 
-        start		power on a guest
-        reboot          reboot a guest
-        stop		gracefully shutdown and power off a guest
-        destroy         brutally power off a guest
+          poweron <guest>	power on a guest
+           reboot <guest>	gracefully restart a guest
+          console <guest>	connect to a guest console
+         poweroff <guest>	gracefully shutdown and power off a guest
+          destroy <guest>	brutally power off a guest
+           remove <guest>	terminate a guest and its storage
 
-        console         connect to a guest console
-
-	exit		return to main menu
-
+	     exit		return to main menu
 EOF
 	#quit		close this session
 }
 
-function allguests {
-	# TODO hmm that one wouldnt get refreshed in case of a new guest gets ordered
-	[[ -z $folders ]] && folders=`find /data/guests/dnc* -type d -maxdepth 0`
-	for guestpath in $folders; do
-		guest=${guestpath##*/}
+function list_user_guests {
+	# HOME refers to registered user's in /data/users/USERNAME/
+	# this is the default CWD already but we're forcing it anyhow
+	cd $HOME/
 
-		echo -n $guest | sed 's/^/\t/'
-		cat $guestpath/state | sed 's/^/\t/'
+	# dsh guest listing shows-up with prefix with 'pmrX: '
+	echo '      Name                                        ID   Mem VCPUs        State   Time(s)'
 
-		unset guest
-	done
-	unset guestpath
+	# symlinks created upon guest creation against ../../guests/GUESTNAME
+	ugsts=`ls -1 | grep -E '^dnc[[:digit:]]'` || true # can be empty
+	[[ -z $ugsts ]] && echo -e "      (empty list)\n" && return
+	for ugst in $ugsts; do
+		[[ ! -d /data/guests/$ugst ]] && bomb cannot find xen guest folder for $ugst - shared disk cluster offline for node `hostname`?
+		tmp=`sudo /usr/local/sbin/dnc-running-guest.bash $ugst`
+		[[ -z $tmp ]] && echo "      $ugst is down" || echo "$tmp"
+		unset tmp
+	done; unset ugst
 
-	# might be re-used
-	#unset folders
+	unset ugsts
+	echo
 }
 
 # TODO check that $node is still accurate for those functions
 # see function whatnode
 
-function cr {
-	[[ -z $node ]] && bomb function cr requires \$node
-	[[ -z $guest ]] && bomb function cr requires \$guest
+function guest_poweron {
+	[[ -z $guest ]] && bomb function guest_poweron requires \$guest
+	[[ ! -x /usr/local/sbin/dnc-startguest-lowram.bash ]] && bomb /usr/local/sbin/dnc-startguest-lowram.bash not executable
+	sudo /usr/local/sbin/dnc-startguest-lowram.bash $guest
+}
 
-	echo creating $guest
-	ssh $node -t xl create $guest && echo created
+function guest_reboot {
+	[[ -z $guest ]] && bomb function guest_reboot requires \$guest
+	[[ ! -x /usr/local/sbin/dnc-rebootguest.bash ]] && bomb /usr/local/sbin/dnc-rebootguest.bash not executable
+	sudo /usr/local/sbin/dnc-rebootguest.bash $guest
+}
+
+function guest_console {
+	[[ -z $guest ]] && bomb function guest_console requires \$guest
+	[[ ! -x /usr/local/sbin/dnc-consoleguest.bash ]] && bomb /usr/local/sbin/dnc-consoleguest.bash not executable
+	cat <<EOF
+ Your $guest guest system can be reached as follows.
+
+	ssh pmr.angrycow.ru -p ${guest#dnc} -l root
+
+EOF
+	echo -n "Are you sure you want to reach the physical console? [y]"
+	read -r answer
+	[[ $answer = y ]] && sudo /usr/local/sbin/dnc-consoleguest.bash $guest
+}
+
+function guest_poweroff {
+	[[ -z $guest ]] && bomb function guest_poweroff requires \$guest
+	[[ ! -x /usr/local/sbin/dnc-shutdown-guest.bash ]] && bomb /usr/local/sbin/dnc-shutdown-guest.bash not executable
+	sudo /usr/local/sbin/dnc-shutdown-guest.bash $guest
+}
+
+function guest_destroy {
+	[[ -z $guest ]] && bomb function guest_destroy requires \$guest
+	[[ ! -x /usr/local/sbin/dnc-destroy-guest.bash ]] && bomb /usr/local/sbin/dnc-destroy-guest.bash not executable
+	sudo /usr/local/sbin/dnc-destroy-guest.bash $guest
+}
+
+function guest_remove {
+	[[ -z $guest ]] && bomb function guest_destroy requires \$guest
+	[[ ! -x /usr/local/sbin/dnc-remove-resource.bash ]] && bomb /usr/local/sbin/dnc-remove-resource.bash not executable
+
+	if [[ -h $HOME/$guest ]]; then
+		[[ ! -d /data/guests/$guest/ ]] && bomb guest $guest does not exist although it is registered for user $USER
+
+		echo -n un-registering guest $guest ...
+		rm -f $HOME/$guest && echo done
+
+		sudo /usr/local/sbin/dnc-remove-resource.bash $guest
+	else
+		[[ -d /data/guests/$guest/ ]] && bomb could not find $HOME/$guest symlink although guest does exist
+		echo guest $guest does not exist
+	fi
 	echo
 }
 
-function co {
-	[[ -z $node ]] && bomb function co requires \$node
-	[[ -z $guest ]] && bomb function co requires \$guest
-
-}
-
-function shu {
-	[[ -z $node ]] && bomb function shu requires \$node
-	[[ -z $guest ]] && bomb function shu requires \$guest
-
-}
-
-function des {
-	[[ -z $node ]] && bomb function des requires \$node
-	[[ -z $guest ]] && bomb function des requires \$guest
-
+function presskey {
+	echo
+	echo -n Press Enter key to return to main menu
+	read -r
 }
 
 function manage_guests {
-	echo -n "> "
+	#echo Enter ? for help
+	echo -n 'angrycow> '
 	read -r cmd
-	#cmd=${cmd//[^A-Za-z0-9-]}
-	cmd=${cmd//[^A-Za-z\?]}
+	#cmd=${cmd//[^-]}
+	cmd=${cmd//[^A-Za-z0-9\? ]}
 	cmd=${cmd,,}
+	guest=${cmd#* }
+	cmd=${cmd%% *}
 	(( debug > 0 )) && echo sanitized cmd is $cmd
+	(( debug > 0 )) && echo eventual guest is $guest
+	echo
 
 	# TODO also allow < > and ^D
 	case $cmd in
 		\?)
-			showhelp
-			;;
-		co*)
-			echo reaching out to $guest console
-			ssh $node -t xl console $guest && echo TODO CLOSING CONSOLE || echo TADAAA
-			echo
-			;;
-		cr*)
-			cr
-			;;
-		des)
-			echo destroying $guest
-			ssh $node -t xl destroy $guest && echo destroyed
-			echo
+			show_help
 			;;
 		l*)
-			allguests
+			list_user_guests
 			;;
 		n*)
-			$HOME/nobudget/new-guest.bash
+			/usr/local/bin/new-guest.bash
 			;;
-		r*)
-			echo rebooting $guest
-			ssh $node -t xl reboot $guest && echo rebooting
-			echo
+		poweron|cr*)
+			guest_poweron
 			;;
-		shu)
-			echo shutting down $guest
-			ssh $node -t xl shutdown $guest && echo shutting down
-			echo
+		co*)
+			guest_console
 			;;
-		terminate)
-			echo TODO TERMINATE A GUEST
+		reb*)
+			guest_reboot
 			;;
-		e*|q*)
-			#echo
-			#echo -n Press Enter key to return to main menu
-			#read -r
+		poweroff|shu*)
+			guest_poweroff
+			;;
+		des)
+			guest_destroy
+			;;
+		remove)
+			guest_remove
+			presskey
+			;;
+		exit|quit)
 			exit
 			;;
 		#q*)
@@ -146,9 +164,12 @@ function manage_guests {
 			;;
 	esac
 	unset cmd
+	echo
 }
 
 clear
+
+source /usr/local/lib/dnclib.bash
 
 [[ -z $USER ]] && bomb USER not defined - should be `whoami`
 [[ -z $HOME ]] && bomb HOME not defined for $USER
@@ -157,11 +178,13 @@ clear
 
 [[ ! -x /usr/local/bin/new-guest.bash ]] && bomb could not find /usr/local/bin/new-guest.bash executable
 
-echo
-echo MANAGE GUESTS
-echo
-echo Enter ? for help
+cat <<EOF
 
+ MANAGE GUESTS
+
+EOF
+
+list_user_guests
 while true; do
 	manage_guests
 done
