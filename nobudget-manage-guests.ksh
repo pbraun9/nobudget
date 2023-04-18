@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/ksh
 set -e
 
 debug=0
@@ -44,7 +44,7 @@ function list_user_guests {
 }
 
 # TODO check that $node is still accurate for those functions
-# see function whatnode
+# see function whatnode in nobudgetlib
 
 function guest_poweron {
 	[[ -z $guest ]] && bomb function guest_poweron requires \$guest
@@ -169,14 +169,16 @@ function manage_guests {
 
 clear
 
-source /usr/local/lib/dnclib.bash
+[[ ! -f /usr/local/lib/nobudgetlib.bash ]] && echo could not find /usr/local/lib/dnclib.bash && exit 1
+
+. /usr/local/lib/nobudgetlib.bash
+
+[[ ! -x /usr/local/bin/new-guest.bash ]] && bomb could not find /usr/local/bin/new-guest.bash executable
 
 [[ -z $USER ]] && bomb USER not defined - should be `whoami`
 [[ -z $HOME ]] && bomb HOME not defined for $USER
 [[ ! -d /data/users/ ]] && bomb /data/ does not seem to be mounted - cluster state is non-optimal
 [[ ! -d $HOME/ ]] && bomb $HOME/ does not exist
-
-[[ ! -x /usr/local/bin/new-guest.bash ]] && bomb could not find /usr/local/bin/new-guest.bash executable
 
 cat <<EOF
 

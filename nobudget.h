@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <ncurses.h>
+#include <curses.h> // that is for netbsd - use ncurses.h on gnu/linux
 #include <string.h> //strlen()
 #include <stdlib.h> //system()
 

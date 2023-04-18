@@ -7,12 +7,10 @@ set -e
 
 debug=0
 
-provider=Angrycow
+provider="Angry Cow"
 from=noreply@angrycow.ru
 support=support@angrycow.ru
 # assuming postfix creates message-id header (always_add_missing_headers)
-
-source /usr/local/lib/nobudgetlib.ksh
 
 function ask_user {
 	print -n Please enter desired username: \\c
@@ -20,9 +18,9 @@ function ask_user {
 	tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:]_.@-]//g'`
 	user=`echo "$tmp2" | grep -E '^[[:alnum:]]+$'`
 	if [[ -z "$tmp" || -z "$tmp2" || -z "$user" || "$tmp" != "$tmp2" || "$user" != "$tmp" ]]; then
-		debugvar tmp
-		debugvar tmp2
-		debugvar user
+		showvar tmp
+		showvar tmp2
+		showvar user
 
 		print
 		print You have entered invalid characters
@@ -33,8 +31,8 @@ function ask_user {
 	fi
 	unset tmp tmp2
 
-	# TODO only root sees NIS users? - avoid sudo here
-	[[ ! -z `sudo getent passwd | grep ^$user:` ]] && echo user $user already exists - please try another user name && ask_user || true
+	# users, here "register", can see NIS users without the need of sudo
+	[[ ! -z `getent passwd | grep ^$user:` ]] && echo user $user already exists - please try another user name && ask_user || true
 }
 
 function ask_email {
@@ -43,9 +41,9 @@ function ask_email {
 	tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:]_.@-]//g'`
 	email=`echo "$tmp2" | grep -E '^[[:alnum:]]+@[[:alnum:]_.-]+\.[[:alpha:]]+$'`
 	if [[ -z "$tmp" || -z "$tmp2" || -z "$email" || "$tmp" != "$tmp2" || "$email" != "$tmp" ]]; then
-		debugvar tmp
-		debugvar tmp2
-		debugvar email
+		showvar tmp
+		showvar tmp2
+		showvar email
 
 		print
 		print You have entered invalid characters
@@ -56,14 +54,7 @@ function ask_email {
 	fi
 	unset tmp tmp2
 
-	# TODO help the user to recover exitinng account instead
-        tmp=`getent passwd | grep :$email:`
-        if [[ -n $tmp ]]; then
-                echo email $email is already registered
-                unset tmp
-                ask_email
-        fi
-        unset tmp
+        [[ ! -z `getent passwd | grep :$email:` ]] && echo email $email is already registered as another account && ask_email || true
 }
 
 function ask_pubkey {
@@ -72,9 +63,9 @@ function ask_pubkey {
 	tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:] _./@-]//g'`
         pubkey=`echo "$tmp2" | grep -E '^[[:alnum:] _./@-]+$'`
         if [[ -z "$tmp" || -z "$tmp2" || -z "$pubkey" || "$tmp" != "$tmp2" || "$pubkey" != "$tmp" ]]; then
-                debugvar tmp
-                debugvar tmp2
-                debugvar pubkey
+                showvar tmp
+                showvar tmp2
+                showvar pubkey
 
                 print
                 print You have entered invalid characters
@@ -119,9 +110,9 @@ function ask_email_code {
         tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:]]//g'`
         answer=`echo "$tmp2" | grep -E '^[[:alnum:]]+$'`
         if [[ -z "$tmp" || -z "$tmp2" || -z "$answer" || "$tmp" != "$tmp2" || "$answer" != "$tmp" ]]; then
-                debugvar tmp
-                debugvar tmp2
-                debugvar answer
+                showvar tmp
+                showvar tmp2
+                showvar answer
 
                 print
                 print You have entered invalid characters
@@ -139,15 +130,18 @@ function ask_email_code {
 	fi
 }
 
-clear
+[[ ! -f /usr/local/lib/nobudgetlib.ksh ]] && echo could not find /usr/local/lib/nobudgetlib.ksh && exit 1
+
+. /usr/local/lib/nobudgetlib.ksh
 
 [[ ! -x `whence pwgen` ]] && bomb cannot find pwgen executable
+
+clear
 
 # REGISTRATION FORM
 cat <<EOF
 
 	      Welcome to $provider
-	         (alpha test)
 
  You will be asked the following informations to create an account:
 
@@ -156,6 +150,8 @@ cat <<EOF
 	o  Your email address
 
 	o  Your SSH public key and comment
+
+	o  Coupon code or payment method
 
 EOF
 #	o  Phone number
@@ -172,28 +168,20 @@ send_email_code
 ask_email_code
 
 echo "Success.  Creating user $user with public key $comment."
-debugvar user
-debugvar pubkeytype
-debugvar pubkey
-debugvar comment
-debugvar email
+showvar user
+showvar pubkeytype
+showvar pubkey
+showvar comment
+showvar email
 
 # this is now tested earlier
 #[[ -n `grep ^$user: /etc/passwd` ]] && bomb user $user already exists - please try another user name
 #[[ -n `getent passwd | grep ^$user:` ]] && bomb echo user $user already exists - please try another user name
 
-mkdir -p /data/users/
-[[ -d /data/users/$user/ ]] && bomb user $user does not exist yet but its homedir already exists
+[[ -d /home/$user/ ]] && bomb user $user does not exist yet but /home/$user/ already exists
 
-# determine who's the current nis master
-echo -n searching for NIS master server...
-ypmaster=`ypwhich` && echo done
-
-# use internal network SSH service
-ssh $ypmaster -l register-helper -p 64999 "sudo nobudget-update-nis $user $email"
-
-#echo creating budget user $user ...
-sudo nobudget-pubkey $user $pubkeytype $pubkey $comment
+sudo /usr/local/sbin/nobudget-update-nis.ksh $user $email
+sudo /usr/local/sbin/nobudget-pubkey.ksh $user $pubkeytype $pubkey $comment
 
 echo -n sending confirmation email...
 #cat <<EOF | mail -s "$provider account registered" $email && echo done
@@ -217,7 +205,7 @@ EOF
 
 cat <<EOF
 
-You can now login and manage guest systems as follows.
+You can now login and manage your guest systems as follows.
 
         ssh pmr.angrycow.ru -l $user
 

@@ -3,7 +3,7 @@
 int lenght = 0;
 int longest = 0;
 
-char title[] = "Angrycow - Definitely Not a Cloud";
+char title[] = "Angry Cow - Definitely Not a Cloud";
 char footer_left[] = "pmr.angrycow.ru";
 char footer_right[] = "nobudget v0.0.1";
 int left_column_length = 28;
@@ -139,7 +139,7 @@ void menu_handler(int selected_item)
 		{
 			// NEW GUEST
 			endwin();
-			system("/usr/local/bin/new-guest.bash");
+			system("/usr/local/bin/nobudget-new-guest.ksh");
 			startwin();
 			break;
 		}
@@ -147,7 +147,7 @@ void menu_handler(int selected_item)
 		{
 			// MANAGE GUESTS
 			endwin();
-			system("/usr/local/bin/manage-guests.bash");
+			system("/usr/local/bin/nobudget-manage-guests.ksh");
 			startwin();
 			break;
 		}
@@ -156,7 +156,7 @@ void menu_handler(int selected_item)
 			// SUPPORT
 			endwin();
 			//display_text("/usr/local/lib/support.txt");
-			system("/usr/local/bin/display-support.bash");
+			system("/usr/local/bin/nobudget-display-support.ksh");
 			startwin();
 			break;
 		}
