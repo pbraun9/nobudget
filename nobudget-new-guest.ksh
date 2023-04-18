@@ -1,12 +1,14 @@
 #!/bin/ksh
 set -e
 
-debug=0
-
 #
 # create new guest from template
 # executed as registrated user
 #
+
+debug=0
+
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/usr/pkg/bin:/usr/pkg/sbin
 
 function build_up_debian {
 	[[ -z $1 ]] && bomb function build_up_debian needs \$tpl

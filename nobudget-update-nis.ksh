@@ -5,6 +5,8 @@ set -e
 # connect to the NIS master on the cluster vlan and rebuild maps
 #
 
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/usr/pkg/bin:/usr/pkg/sbin
+
 [[ -z $2 ]] && echo usage: ${0##*/} user email && exit 1
 user=$1
 email=$2

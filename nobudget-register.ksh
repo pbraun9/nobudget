@@ -12,8 +12,10 @@ from=noreply@angrycow.ru
 support=support@angrycow.ru
 # assuming postfix creates message-id header (always_add_missing_headers)
 
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/usr/pkg/bin:/usr/pkg/sbin
+
 function ask_user {
-	print -n Please enter desired username: \\c
+	print -n " Please enter desired username: \c"
 	read -r tmp
 	tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:]_.@-]//g'`
 	user=`echo "$tmp2" | grep -E '^[[:alnum:]]+$'`
@@ -36,7 +38,7 @@ function ask_user {
 }
 
 function ask_email {
-	print -n Please enter your email: \\c
+	print -n " Please enter your email: \c"
 	read -r tmp
 	tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:]_.@-]//g'`
 	email=`echo "$tmp2" | grep -E '^[[:alnum:]]+@[[:alnum:]_.-]+\.[[:alpha:]]+$'`
@@ -58,7 +60,7 @@ function ask_email {
 }
 
 function ask_pubkey {
-	print Please enter your SSH public key and comment \(one line\):
+	print " Please enter your SSH public key and comment (one line starting with ssh-):"
 	read -r tmp
 	tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:] _./@-]//g'`
         pubkey=`echo "$tmp2" | grep -E '^[[:alnum:] _./@-]+$'`
@@ -84,9 +86,9 @@ function send_email_code {
 	unalias pwgen || true
 	code=`pwgen --no-capitalize --no-numerals --secure 5 1 | tr a-z A-Z`
 
-	print "sending registration code to $email (STARTTLS)... \c"
+	print sending registration code to $email \(STARTTLS\)... \\c
 	#print Here is the code to register at $provider: $code | mail -s "$provider registration code" $email && echo done
-	cat <<EOF | sendmail -t && echo done
+	cat <<EOF | /usr/sbin/sendmail -t && echo done
 From: $provider <$from>
 To: $email
 Subject: $provider registration code
@@ -105,7 +107,7 @@ function ask_email_code {
         #print
         #print Verification code has been sent by email!
 	#print
-        print Please enter the $provider registration code that you have received: \\c
+        print " Please enter the $provider registration code that you have received: \c"
         read -r tmp
         tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:]]//g'`
         answer=`echo "$tmp2" | grep -E '^[[:alnum:]]+$'`
@@ -156,7 +158,7 @@ cat <<EOF
 EOF
 #	o  Phone number
 
-echo -n Press enter key to continue
+echo -n " Press enter key to continue"
 read -r
 print ''
 
@@ -167,7 +169,7 @@ ask_pubkey
 send_email_code
 ask_email_code
 
-echo "Success.  Creating user $user with public key $comment."
+echo " Success.  Creating user $user with public key $comment."
 showvar user
 showvar pubkeytype
 showvar pubkey
@@ -185,7 +187,7 @@ sudo /usr/local/sbin/nobudget-pubkey.ksh $user $pubkeytype $pubkey $comment
 
 echo -n sending confirmation email...
 #cat <<EOF | mail -s "$provider account registered" $email && echo done
-cat <<EOF | sendmail -t && echo done
+cat <<EOF | /usr/sbin/sendmail -t && echo done
 From: $provider <$from>
 To: $email
 Subject: Welcome to $provider
@@ -205,13 +207,13 @@ EOF
 
 cat <<EOF
 
-You can now login and manage your guest systems as follows.
+ You can now login and manage your guest systems as follows.
 
         ssh pmr.angrycow.ru -l $user
 
 EOF
 
-echo -n Press enter key to exit
+echo -n " Press enter key to exit"
 read -r
 
 #$HOME/nobudget/verifycode.py $email $code && print done || bomb failed to verify code

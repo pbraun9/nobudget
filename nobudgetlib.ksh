@@ -3,7 +3,7 @@
 function bomb {
         time=`date "+%Y-%m-%d %H:%M:%S"`
 
-        echo "$time - $USER - error: $@" >> /var/tmp/nobudget.error.log 2>&1
+        echo "$time - error: $@" >> /var/tmp/nobudget.$USER.error.log 2>&1
         echo
         echo "error: $@"
         echo

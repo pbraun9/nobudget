@@ -31,8 +31,7 @@ This user has the rights to call the `nobudget-update-nis.ksh` and `nobudget-pub
 pre-configure that user for prospects to register
 
 	groupadd -g 999 register
-	useradd -m -u 999 -g register -s /bin/ksh register
-	# -s /usr/local/bin/nobudget-register.ksh
+	useradd -m -u 999 -g register -s /usr/local/bin/nobudget-register.ksh register
 
 allow the TUIs as shell
 
@@ -51,6 +50,46 @@ and the `nisusers` group to ssh to DRBD/XEN nodes
 
 	# quick & dirty for now
 	%nisusers ALL=(root) NOPASSWD: /usr/bin/ssh
+
+also allow prospects to reach SSH service for the `register` user anonymously.
+
+	mv -i /etc/ssh/sshd_config /etc/ssh/sshd_config.dist
+	grep -vE '^#|^$' /etc/ssh/sshd_config.dist > /etc/ssh/sshd_config.clean
+	grep -vE '^#|^$' /etc/ssh/sshd_config.dist > /etc/ssh/sshd_config
+	vi /etc/ssh/sshd_config
+
+	LoginGraceTime 600
+	AuthorizedKeysFile      .ssh/authorized_keys
+
+	# no pam
+	UsePam no
+
+	# no sftp
+	#Subsystem      sftp    /usr/libexec/sftp-server
+
+	AllowGroups wheel nisusers
+	PermitRootLogin yes
+	HostKey /etc/ssh/ssh_host_ecdsa_key
+	HostKey /etc/ssh/ssh_host_ed25519_key
+
+	AuthenticationMethods publickey
+	KbdInteractiveAuthentication no
+	MaxAuthTries 3
+	PasswordAuthentication no
+	PermitEmptyPasswords no
+	PrintMotd no
+	Protocol 2
+	StrictModes yes
+	UseDNS no
+	X11Forwarding no
+	AllowTcpForwarding no
+
+	Match user register
+		AllowGroups register
+		AllowUsers register
+		AuthenticationMethods none
+		PasswordAuthentication yes
+		PermitEmptyPasswords yes
 
 ## Install
 
@@ -81,7 +120,10 @@ disable password authentication and take over 22/tcp
 
 _assuming the casual SSH daemon is running on another port_
 
-	vi /etc/ssh/sshd_config_nobudget
+	mv -i /etc/ssh/sshd_config /etc/ssh/sshd_config.dist
+	grep -vE '^#|^$' /etc/ssh/sshd_config.dist > /etc/ssh/sshd_config.clean
+	grep -vE '^#|^$' /etc/ssh/sshd_config.dist > /etc/ssh/sshd_config
+	vi /etc/ssh/sshd_config
 
 	AllowGroups budgetusers wheel
 	PermitRootLogin no

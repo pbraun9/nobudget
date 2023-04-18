@@ -3,6 +3,8 @@ set -e
 
 debug=0
 
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/usr/pkg/bin:/usr/pkg/sbin
+
 function show_help {
 	cat <<EOF
 

@@ -1,5 +1,7 @@
 #!/bin/ksh
 
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/usr/pkg/bin:/usr/pkg/sbin
+
 clear
 cat <<EOF
 
