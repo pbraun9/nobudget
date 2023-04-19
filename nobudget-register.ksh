@@ -1,11 +1,11 @@
 #!/bin/ksh
 set -e
 
+debug=0
+
 #
 # shell-based PoC to register nobudget users
 #
-
-debug=0
 
 provider="Angry Cow"
 from=noreply@angrycow.ru
@@ -13,6 +13,50 @@ support=support@angrycow.ru
 # assuming postfix creates message-id header (always_add_missing_headers)
 
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/usr/pkg/bin:/usr/pkg/sbin
+
+function ask_coupon_code {
+        print " Please enter the coupon code or payment method: \c"
+        read -r tmp
+        tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:]-]//g'`
+        answer=`echo "$tmp2" | grep -E '^[[:alnum:]-]+$'`
+        if [[ -z "$tmp" || -z "$tmp2" || -z "$answer" || "$tmp" != "$tmp2" || "$answer" != "$tmp" ]]; then
+                showvar tmp
+                showvar tmp2
+                showvar answer
+
+                print
+                print " You have entered invalid characters"
+                print
+                unset tmp tmp2 answer
+
+                ask_coupon_code
+        fi
+        coupon=$answer
+        unset tmp tmp2 answer
+
+        # can have comments but no need to grep them out
+        thereis=`grep ^$coupon, /home/COUPON-CODES.csv`
+        showvar thereis
+        [[ -z $thereis ]] && echo could not find coupon code $coupon && ask_coupon_code
+
+	integer seconds=`date +%s`
+        integer validuntil=`echo $thereis | cut -f2 -d,`
+
+        validuntilh=`echo $thereis | cut -f3 -d,`
+
+	echo coupon code $coupon is valid until $validuntilh \($validuntil\)
+
+        if (( seconds > validuntil )); then
+                bomb coupon code $coupon has expired
+        fi
+
+	#showvar coupon
+	#echo -n recording coupon code...
+	#echo -n `date`, >> /home/$user/coupon-code.csv
+	#echo $coupon >> /home/$user/coupon-code.csv && echo done
+
+        unset thereis validuntil validuntilh seconds
+}
 
 function ask_user {
 	print -n " Please enter desired username: \c"
@@ -25,7 +69,7 @@ function ask_user {
 		showvar user
 
 		print
-		print You have entered invalid characters
+		print " You have entered invalid characters"
 		print 
         	unset tmp tmp2 user
 
@@ -48,7 +92,7 @@ function ask_email {
 		showvar email
 
 		print
-		print You have entered invalid characters
+		print " You have entered invalid characters"
 		print 
         	unset tmp tmp2 email
 
@@ -60,26 +104,38 @@ function ask_email {
 }
 
 function ask_pubkey {
-	print " Please enter your SSH public key and comment (one line starting with ssh-):"
+	print " Please enter your SSH public key (one-line OpenSSH format):"
 	read -r tmp
-	tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:] _./@-]//g'`
-        pubkey=`echo "$tmp2" | grep -E '^[[:alnum:] _./@-]+$'`
-        if [[ -z "$tmp" || -z "$tmp2" || -z "$pubkey" || "$tmp" != "$tmp2" || "$pubkey" != "$tmp" ]]; then
+	tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:] _+./@-]//g'`
+        pubkeyformat=`echo "$tmp2" | grep -E '^[[:alnum:] _+./@-]+$'`
+
+        if [[ -z "$tmp" || -z "$tmp2" || -z "$pubkeyformat" || "$tmp" != "$tmp2" || "$pubkeyformat" != "$tmp" ]]; then
                 showvar tmp
                 showvar tmp2
-                showvar pubkey
+                showvar pubkeyformat
 
                 print
-                print You have entered invalid characters
+                print " You have entered invalid characters"
                 print
-        	unset tmp tmp2 pubkey
+        	unset tmp tmp2 pubkeyformat
 
                 ask_pubkey
         fi
         unset tmp tmp2
-	pubkeytype=`echo $pubkey | awk '{print $1}'`
-	comment=`echo $pubkey | awk '{print $3}'`
-	pubkey=`echo $pubkey | awk '{print $2}'`
+
+	showvar pubkeyformat
+	pubkeytype=`echo $pubkeyformat | awk '{print $1}'`
+	pubkey=`echo $pubkeyformat | awk '{print $2}'`
+	comment=`echo $pubkeyformat | awk '{print $3}'`
+	unset pubkeyformat
+
+	showvar pubkeytype
+	showvar pubkey
+	showvar comment
+
+	[[ -z $pubkeytype ]] && echo could not determine \$pubkeytype && ask_pubkey || true
+	[[ -z $pubkey ]] && echo could not determine \$pubkey && ask_pubkey || true
+	[[ -z $comment ]] && echo could not determine \$comment && ask_pubkey || true
 }
 
 function send_email_code {
@@ -107,7 +163,7 @@ function ask_email_code {
         #print
         #print Verification code has been sent by email!
 	#print
-        print " Please enter the $provider registration code that you have received: \c"
+        print " Please enter the $provider registration code that you have received (eventually check SPAM folder): \c"
         read -r tmp
         tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:]]//g'`
         answer=`echo "$tmp2" | grep -E '^[[:alnum:]]+$'`
@@ -117,7 +173,7 @@ function ask_email_code {
                 showvar answer
 
                 print
-                print You have entered invalid characters
+                print " You have entered invalid characters"
                 print
         	unset tmp tmp2 answer
 
@@ -165,6 +221,7 @@ print ''
 ask_user
 ask_email
 ask_pubkey
+ask_coupon_code
 
 send_email_code
 ask_email_code
@@ -215,9 +272,4 @@ EOF
 
 echo -n " Press enter key to exit"
 read -r
-
-#$HOME/nobudget/verifycode.py $email $code && print done || bomb failed to verify code
-#$HOME/nobudget/resendcode.py $email $code && print done || bomb failed to verify code
-#$HOME/nobudget/registeruser.py $email \\"$pubkey\\" && print done || bomb failed to create user
-#[[ ! -x `whence $HOME/nobudget/registeruser` ]] && bomb $HOME/nobudget/registeruser executable missing
 

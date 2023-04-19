@@ -47,11 +47,11 @@ function ask_system {
 	cat <<EOF
  Which system would you like to deploy?
 
-  1. Debian 11 (bullseye)
-  2. NetBSD/amd64 9.3
-  3. Slackware Linux 15.0 64-bit
+  1. Debian/amd64 11
 
 EOF
+  #2. NetBSD/amd64 9.3
+  #3. Slackware Linux 15.0 64-bit
 
 	echo -n " Type a number: "
 	read -r choice
@@ -62,10 +62,10 @@ EOF
 
 	case $choice in
 		1) build_up_debian debian11jan2023 ;;
-		2) build_up_netbsd TPL ;;
-		3) build_up_slackware TPL ;;
 		*) return ;;
 	esac
+		#2) build_up_netbsd TPL ;;
+		#3) build_up_slackware TPL ;;
 }
 
 function next_available {
