@@ -3,7 +3,9 @@
 function bomb {
         time=`date "+%Y-%m-%d %H:%M:%S"`
 
+	# writing there meanwhile, so both register and users can write logs
         echo "$time - error: $@" >> /var/tmp/nobudget.$USER.error.log 2>&1
+
         echo
         echo "error: $@"
         echo

@@ -1,21 +1,23 @@
 #!/bin/ksh
 set -e
 
-debug=0
+(( debug = 0 ))
 
 #
 # shell-based PoC to register nobudget users
 #
 
 provider="Angry Cow"
+
+# assuming postfix creates message-id header (always_add_missing_headers)
 from=noreply@angrycow.ru
 support=support@angrycow.ru
-# assuming postfix creates message-id header (always_add_missing_headers)
 
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/usr/pkg/bin:/usr/pkg/sbin
 
-function ask_coupon_code {
-        print " Please enter the coupon code or payment method: \c"
+function ask_coupon {
+        #print " Please enter a coupon code or payment method: \c"
+        print " Please enter your coupon code: \c"
         read -r tmp
         tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:]-]//g'`
         answer=`echo "$tmp2" | grep -E '^[[:alnum:]-]+$'`
@@ -29,15 +31,15 @@ function ask_coupon_code {
                 print
                 unset tmp tmp2 answer
 
-                ask_coupon_code
+                ask_coupon
         fi
         coupon=$answer
         unset tmp tmp2 answer
 
-        # can have comments but no need to grep them out
-        thereis=`grep ^$coupon, /home/COUPON-CODES.csv`
+	# root homedir has perms 755
+        thereis=`grep ^$coupon, /root/COUPON-CODES.csv`
         showvar thereis
-        [[ -z $thereis ]] && echo could not find coupon code $coupon && ask_coupon_code
+        [[ -z $thereis ]] && bomb could not find coupon code $coupon
 
 	integer seconds=`date +%s`
         integer validuntil=`echo $thereis | cut -f2 -d,`
@@ -47,42 +49,33 @@ function ask_coupon_code {
 	echo coupon code $coupon is valid until $validuntilh \($validuntil\)
 
         if (( seconds > validuntil )); then
+                #echo coupon code $coupon has expired
+		#echo
+		#ask_coupon
                 bomb coupon code $coupon has expired
         fi
-
-	#showvar coupon
-	#echo -n recording coupon code...
-	#echo -n `date`, >> /home/$user/coupon-code.csv
-	#echo $coupon >> /home/$user/coupon-code.csv && echo done
 
         unset thereis validuntil validuntilh seconds
 }
 
-function ask_user {
-	print -n " Please enter desired username: \c"
-	read -r tmp
-	tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:]_.@-]//g'`
-	user=`echo "$tmp2" | grep -E '^[[:alnum:]]+$'`
-	if [[ -z "$tmp" || -z "$tmp2" || -z "$user" || "$tmp" != "$tmp2" || "$user" != "$tmp" ]]; then
-		showvar tmp
-		showvar tmp2
-		showvar user
+function define_user {
+	[[ -z $email ]] && bomb function define_user requires \$email
 
-		print
-		print " You have entered invalid characters"
-		print 
-        	unset tmp tmp2 user
+	# TODO check how many @ iterations, if more than one, that's a problem
+	# note we've checked that the address exists for now
+	#user=$email
 
-		ask_user
-	fi
-	unset tmp tmp2
+	# since both useradd and pwd_mkdb cannot handle @
+	# we are using alternate user names for now
+	user=`echo $email | sed 's/@/__/'`
 
-	# users, here "register", can see NIS users without the need of sudo
-	[[ ! -z `getent passwd | grep ^$user:` ]] && echo user $user already exists - please try another user name && ask_user || true
+	# users incl. "register", can see NIS users without the need of sudo
+	#[[ ! -z `getent passwd | grep ^$user:` ]] && echo user $user is already registered && ask_email || true
+	[[ ! -z `getent passwd | grep ^$user:` ]] && bomb user $user is already registered || true
 }
 
 function ask_email {
-	print -n " Please enter your email: \c"
+	print -n " Please enter your email address: \c"
 	read -r tmp
 	tmp2=`echo "$tmp" | sed -r 's/[^[:alnum:]_.@-]//g'`
 	email=`echo "$tmp2" | grep -E '^[[:alnum:]]+@[[:alnum:]_.-]+\.[[:alpha:]]+$'`
@@ -100,7 +93,9 @@ function ask_email {
 	fi
 	unset tmp tmp2
 
-        [[ ! -z `getent passwd | grep :$email:` ]] && echo email $email is already registered as another account && ask_email || true
+        #[[ ! -z `getent passwd | grep :$email:` ]] && echo email $email is already registered && ask_email || true
+        [[ ! -z `getent passwd | grep :$email:` ]] && bomb email $email is already registered || true
+	define_user
 }
 
 function ask_pubkey {
@@ -126,34 +121,32 @@ function ask_pubkey {
 	showvar pubkeyformat
 	pubkeytype=`echo $pubkeyformat | awk '{print $1}'`
 	pubkey=`echo $pubkeyformat | awk '{print $2}'`
-	comment=`echo $pubkeyformat | awk '{print $3}'`
 	unset pubkeyformat
 
 	showvar pubkeytype
 	showvar pubkey
-	showvar comment
 
-	[[ -z $pubkeytype ]] && echo could not determine \$pubkeytype && ask_pubkey || true
-	[[ -z $pubkey ]] && echo could not determine \$pubkey && ask_pubkey || true
-	[[ -z $comment ]] && echo could not determine \$comment && ask_pubkey || true
+	#[[ -z $pubkeytype ]] && echo could not determine \$pubkeytype && ask_pubkey || true
+	[[ -z $pubkeytype ]] && bomb could not determine \$pubkeytype || true
+	#[[ -z $pubkey ]] && echo could not determine \$pubkey && ask_pubkey || true
+	[[ -z $pubkey ]] && bomb could not determine \$pubkey || true
 }
 
 function send_email_code {
-	unalias pwgen || true
+	#unalias pwgen || true
 	code=`pwgen --no-capitalize --no-numerals --secure 5 1 | tr a-z A-Z`
 
 	print sending registration code to $email \(STARTTLS\)... \\c
-	#print Here is the code to register at $provider: $code | mail -s "$provider registration code" $email && echo done
+	#print ... | mail -s "$provider registration code" $email && echo done
 	cat <<EOF | /usr/sbin/sendmail -t && echo done
 From: $provider <$from>
 To: $email
 Subject: $provider registration code
 
-Here is the code to register at $provider: $code
+Here is your code to confirm your email address and register at $provider: $code
 
 -- 
 This is alpha test software
-<https://github.com/pbraun9/nobudget>
 Please send issues and feedback to <$support>
 EOF
 
@@ -201,46 +194,58 @@ cat <<EOF
 
 	      Welcome to $provider
 
- You will be asked the following informations to create an account:
+ You will be asked the following information to create an account:
 
-	o  Define a username
+	o  Email address
 
-	o  Your email address
+	o  SSH public key
 
-	o  Your SSH public key and comment
-
-	o  Coupon code or payment method
+	o  Coupon code
 
 EOF
+# or payment method
 #	o  Phone number
 
 echo -n " Press enter key to continue"
 read -r
 print ''
 
-ask_user
 ask_email
-ask_pubkey
-ask_coupon_code
-
-send_email_code
-ask_email_code
-
-echo " Success.  Creating user $user with public key $comment."
+[[ -z $email ]] && bomb \$email not defined
+[[ -z $user ]] && bomb \$user not defined
+showvar email
 showvar user
+
+# TODO check pubkey types...
+ask_pubkey
+[[ -z $pubkeytype ]] && bomb \$pubkeytype not defined
+[[ -z $pubkey ]] && bomb \$pubkey not defined
 showvar pubkeytype
 showvar pubkey
-showvar comment
-showvar email
+
+ask_coupon
+[[ -z $coupon ]] && bomb \$coupon not defined
+showvar coupon
+
+send_email_code
+[[ -z $code ]] && bomb \$code not defined
+
+ask_email_code
+
+echo " Success.  Creating user $user with public key type $pubkeytype"
 
 # this is now tested earlier
 #[[ -n `grep ^$user: /etc/passwd` ]] && bomb user $user already exists - please try another user name
 #[[ -n `getent passwd | grep ^$user:` ]] && bomb echo user $user already exists - please try another user name
 
-[[ -d /home/$user/ ]] && bomb user $user does not exist yet but /home/$user/ already exists
+# no need for user homedirs
+#[[ -d /home/$user/ ]] && bomb user $user does not exist yet but /home/$user/ already exists
 
-sudo /usr/local/sbin/nobudget-update-nis.ksh $user $email
-sudo /usr/local/sbin/nobudget-pubkey.ksh $user $pubkeytype $pubkey $comment
+# user comment = coupon code here
+sudo /usr/local/sbin/nobudget-update-nis.ksh $user $coupon
+
+# ssh pubkey comment = username/email here
+sudo /usr/local/sbin/nobudget-pubkey.ksh $user $pubkeytype $pubkey $user
 
 echo -n sending confirmation email...
 #cat <<EOF | mail -s "$provider account registered" $email && echo done
@@ -251,7 +256,7 @@ Subject: Welcome to $provider
 
 Your $provider account $user is now registered.
 
-Here is how to access the management interface.
+You can reach the management interface as follows.
 
         ssh pmr.angrycow.ru -l $user
 
