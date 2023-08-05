@@ -4,7 +4,10 @@ function bomb {
         time=`date "+%Y-%m-%d %H:%M:%S"`
 
 	# writing there meanwhile, so both register and users can write logs
+	# besides, users do not currently have write access to their own home dir
         echo "$time - error: $@" >> /var/tmp/nobudget.$USER.error.log 2>&1
+
+	#echo "$time - error: $@" >> /home/$USER/nobudget.error.log 2>&1
 
         echo
         echo "error: $@"

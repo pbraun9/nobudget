@@ -1,40 +1,26 @@
 #!/bin/ksh
 set -e
 
-#
-# connect to the NIS master on the cluster vlan and rebuild maps
-# useradd doesn't allow @ so we're going pwd_mkdb
+# ksh required for using print because bash isn't happy with echoing shadow fields
+# bash: :19574: bad word specifier
 
-PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/usr/pkg/bin:/usr/pkg/sbin
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 
-[[ -z $2 ]] && echo usage: ${0##*/} username/email coupon-code && exit 1
+[[ -z $2 ]] && echo usage: ${0##*/} user/email coupon-code && exit 1
 user=$1
 coupon=$2
 
-[[ ! -x `which ypwhich` ]] && echo ypwhich executable not found && exit 1
-#[[ ! -x `which pwgen` ]] && echo pwgen executable not found && exit 1
+echo -n creating UNIX user $user ...
 
-# determine who's the current nis master
-echo -n searching for NIS master server ...
-ypmaster=`ypwhich` && echo $ypmaster
+# register user has 999 so even if one starts from scratch, we're good somehow
+(( uid = `cut -f3 -d: /etc/passwd | sort -n | tail -1` + 1 ))
 
-echo -n creating UNIX user $user on $ypmaster ...
-ssh $ypmaster -l root /usr/sbin/useradd -m -g nisusers -c $coupon -s /usr/local/bin/nobudget $user && echo done
-#ssh $ypmaster -l root echo $user:*:1000:100:$coupon:/home/$user:/usr/local/bin/nobudget >> /etc/passwd && echo done
+(( epoch = `date +%s` / 60 / 24 ))
 
-# useradd: Can't add user `pouet@pouet.fr': invalid login name
-# pwd_mkdb: user `pbraun@nethence.com' not found in password file
+print "$user:x:$uid:10:$coupon:/home/$user:/usr/local/bin/nobudget" >> /etc/passwd && echo -n uid $uid ...
+print "$user:!:$epoch:0:99999:7:::" >> /etc/shadow && echo -n epoch $epoch ... 
+mkdir /home/$user/ && echo done
 
-# https://man.netbsd.org/pwd_mkdb.8
-#echo -n updating password database on $ypmaster ...
-#ssh $ypmaster -l root /usr/sbin/pwd_mkdb -wu $user /etc/master.passwd && echo done
-
-#echo -n unlocking user $user ...
-#unalias pwgen 2>/dev/null || true
-#(echo -n "$user:"; pwgen 16 1) | chpasswd $user & echo done
-
-# we want the maps to be re-generated as soon as possible
-# so the host can see the user eventually already exists
-echo -n updating NIS on $ypmaster ...
-ssh $ypmaster -l root "cd /var/yp/ && make >/dev/null && echo done"
+# chown: /home/your@email/: Operation not permitted
+#chown $uid:10 /home/$user/ && echo done
 

@@ -8,7 +8,7 @@ nobudget:
 	$(CC) $(CFLAGS) nobudget.c -o nobudget $(LDFLAGS)
 
 nobudget-debug:
-	$(CC) $(CFLAGS) -Wall -Wextra -Og -g nobudget.c -o nobudget $(LDFLAGS)
+	$(CC) $(CFLAGS) -Wextra -Og -g nobudget.c -o nobudget $(LDFLAGS)
 
 install:
 	install -d $(DESTDIR)$(PREFIX)/bin/
@@ -26,4 +26,3 @@ install:
 
 clean:
 	rm -f nobudget
-
