@@ -1,4 +1,4 @@
-# No Budget
+# nobudget
 
 _text-mode user interface for [convergent DRBD/XEN farms](https://github.com/pbraun9/dnc)_
 
@@ -30,11 +30,11 @@ This user has the rights to call the `nobudget-update-nis.ksh` and `nobudget-pub
 - a working outbound email system
 -->
 
-## System preparation
+## sysprep
 
-see [SYSPREP](SYSPREP)
+see [SYSPREP.md](SYSPREP.md)
 
-## Installation
+## install
 
-see [INSTALL](INSTALL)
+see [INSTALL.md](INSTALL.md)
 

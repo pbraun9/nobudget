@@ -1,4 +1,4 @@
-# No Budget - Installation
+# nobudget install
 
 _tested on sabotage linux (netbsd curses)_
 

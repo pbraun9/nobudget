@@ -1,4 +1,4 @@
-# No Budget - System Preparation
+# nobudget sysprep
 
 _tested on sabotage linux (busybox)_
 
@@ -27,7 +27,7 @@ eventually fix the comment field to reflect the hostname
 
 	register:x:999:999:register@nobudget:/home/register:/usr/local/bin/nobudget-register.ksh
 
-allow the TUIs as shell
+allow the text UIs as shells
 
 	echo /usr/local/bin/nobudget-register.ksh >> /etc/shells
 	echo /usr/local/bin/nobudget >> /etc/shells
@@ -59,12 +59,12 @@ allow prospects to reach SSH service for the `register` user anonymously
 	# dirty hack to let users login although they don't have ownership of .ssh/
 	strictmodes no
 
-	Match user register
-		AllowGroups register
-		AllowUsers register
-		AuthenticationMethods none
-		PasswordAuthentication yes
-		PermitEmptyPasswords yes
+	match user register
+		allowgroups register
+		allowusers register
+		authenticationmethods none
+		passwordauthentication yes
+		permitemptypasswords yes
 
 ready to go
 
